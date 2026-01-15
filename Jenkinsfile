@@ -4,36 +4,44 @@ pipeline {
     environment {
         TOMCAT_WEBAPPS = '/var/lib/tomcat10/webapps'
         JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
+        PATH = "${JAVA_HOME}/bin:${env.PATH}"
     }
 
     stages {
+
         stage('Checkout') {
             steps {
-                git 'https://github.com/pankajdixit52/jenkins-demo.git'
+                echo '📥 Checking out source code'
+                checkout scm
             }
         }
 
         stage('Build WAR') {
             steps {
-                sh 'chmod +x build.sh'
-                sh './build.sh'
+                echo '🛠 Building WAR'
+                sh '''
+                    chmod +x build.sh
+                    ./build.sh
+                '''
             }
         }
 
         stage('Deploy to Tomcat') {
             steps {
-                // Copy WAR to Tomcat webapps (ensure permission is set correctly)
-                sh 'cp mywebapp.war $TOMCAT_WEBAPPS/'
+                echo '🚀 Deploying to Tomcat'
+                sh '''
+                    cp mywebapp.war ${TOMCAT_WEBAPPS}/
+                '''
             }
         }
     }
 
     post {
         success {
-            echo '✅ Build and Deployment Successful!'
+            echo '✅ CI/CD Pipeline executed successfully!'
         }
         failure {
-            echo '❌ Build or Deployment Failed!'
+            echo '❌ Pipeline failed. Check logs.'
         }
     }
 }
