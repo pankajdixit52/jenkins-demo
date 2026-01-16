@@ -2,35 +2,39 @@ pipeline {
     agent any
 
     environment {
-        TOMCAT_WEBAPPS = '/var/lib/tomcat10/webapps'
-        JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
-        PATH = "${JAVA_HOME}/bin:${env.PATH}"
+        IMAGE_NAME = "jenkins-tomcat-app"
+        CONTAINER_NAME = "tomcat-app"
     }
 
     stages {
 
         stage('Checkout') {
             steps {
-                echo '📥 Checking out source code'
-                checkout scm
+                git 'https://github.com/pankajdixit52/jenkins-demo.git'
             }
         }
 
         stage('Build WAR') {
             steps {
-                echo '🛠 Building WAR'
-                sh '''
-                    chmod +x build.sh
-                    ./build.sh
-                '''
+                sh 'chmod +x build.sh'
+                sh './build.sh'
             }
         }
 
-        stage('Deploy to Tomcat') {
+        stage('Docker Build') {
             steps {
-                echo '🚀 Deploying to Tomcat'
+                sh 'docker build -t $IMAGE_NAME .'
+            }
+        }
+
+        stage('Docker Deploy') {
+            steps {
                 sh '''
-                    cp mywebapp.war ${TOMCAT_WEBAPPS}/
+                docker rm -f $CONTAINER_NAME || true
+                docker run -d \
+                  -p 9095:8080 \
+                  --name $CONTAINER_NAME \
+                  $IMAGE_NAME
                 '''
             }
         }
@@ -38,10 +42,10 @@ pipeline {
 
     post {
         success {
-            echo '✅ CI/CD Pipeline executed successfully!'
+            echo "✅ Dockerized Deployment Successful!"
         }
         failure {
-            echo '❌ Pipeline failed. Check logs.'
+            echo "❌ Pipeline Failed"
         }
     }
 }
